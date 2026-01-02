@@ -5,12 +5,17 @@
     <title>Fixing Search - Private Language</title>
     <style>
         body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
-        .loader { border:3px solid #1a1a1a; border-top:3px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
+        .loader { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
         @keyframes spin { 100% { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div id="loader"><div class="loader"></div><p style="margin-left:15px">Fixing Dil Çözülüyor...</p></div>
+    <div id="loader">
+        <div style="text-align:center;">
+            <div class="loader"></div>
+            <p style="margin-top:20px; letter-spacing:1px; font-size:13px;">Fixing Dil Çözülüyor...</p>
+        </div>
+    </div>
 
     <script>
     async function sitemiAc() {
@@ -20,13 +25,17 @@
                 fetch("obfexfixingsearch.txt")
             ]);
 
-            const map = JSON.parse("{" + (await kRes.text()).trim() + "}");
+            if(!kRes.ok || !dRes.ok) throw new Error("Dosyalar eksik!");
+
+            const keyContent = await kRes.text();
+            // JSON hatasını önlemek için kontrol
+            const map = JSON.parse(keyContent.trim());
+            
             let tersMap = {};
             for (let k in map) { tersMap[map[k]] = k; }
 
             let dataStr = (await dRes.text()).trim();
             
-            // "fix" ile başlayan özel kodları ve harfleri ayıklayan algoritma
             const siraliAnahtarlar = Object.keys(tersMap).sort((a,b) => b.length - a.length);
             let sonuc = "";
             let i = 0;
@@ -35,7 +44,12 @@
                 let buldu = false;
                 for (let anahtar of siraliAnahtarlar) {
                     if (dataStr.startsWith(anahtar, i)) {
-                        sonuc += tersMap[anahtar];
+                        let harf = tersMap[anahtar];
+                        // Özel kodları gerçek karakterlere çevir
+                        if(harf === "fix0") harf = " ";
+                        if(harf === "fix29") harf = "\n";
+                        // Diğer fix kodları zaten map içinde karakter olarak duruyor
+                        sonuc += harf;
                         i += anahtar.length;
                         buldu = true;
                         break;
@@ -48,7 +62,8 @@
             document.write(sonuc);
             document.close();
         } catch (e) {
-            document.body.innerHTML = "Hata: " + e.message;
+            console.error(e);
+            document.getElementById("loader").innerHTML = `<p style="color:#ff4444; text-align:center;">Sistem Hatası: ${e.message}<br><small>Key dosyasındaki parantezleri kontrol et!</small></p>`;
         }
     }
     sitemiAc();
