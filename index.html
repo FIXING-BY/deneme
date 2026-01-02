@@ -3,81 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Korunmuş Sayfa</title>
+    <title>Fixing Search</title>
     <style>
-        /* Sayfa yüklenene kadar siyah ekran sağlar */
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            color: #fff;
+        /* Siten yüklenene kadar görünecek olan siyah arka plan ve yükleme animasyonu */
+        body { 
+            margin: 0; 
+            background: #050505; 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden; 
             font-family: sans-serif;
         }
-
-        /* İçerik yüklendiğinde yapıyı bozmaması için düzenlendi */
-        #root {
-            display: block;
-            width: 100%;
-            min-height: 100vh;
+        .loader {
+            text-align: center;
         }
-
-        /* Obfex etiketi - İçeriğin üstüne binmemesi için */
-        #obfex {
-            position: fixed;
-            bottom: 10px;
-            right: 15px;
-            font-size: 11px;
-            opacity: 0.3;
-            pointer-events: none;
-            z-index: 9999;
-            color: #ccc;
+        .ring {
+            width: 50px; height: 50px;
+            border: 3px solid #1a1a1a;
+            border-top: 3px solid #00e5ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
         }
-
-        /* Sayfa yapısını bozan aşırı kısıtlayıcı yıldız (*) kuralları kaldırıldı */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #obfex-tag { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.2; }
     </style>
 </head>
 <body>
-    <div id="root">Yükleniyor...</div>
-    <div id="obfex">bu site obfex tarafından korunmaktadır</div>
+
+    <div id="root">
+        <div class="loader">
+            <div class="ring"></div>
+            <p>Sistem Yükleniyor...</p>
+        </div>
+    </div>
+    
+    <div id="obfex-tag">protected by obfex</div>
 
     <script>
-    (async () => {
+    async function baslat() {
         try {
-            const enc = await fetch("obfexfixingsearch.txt").then(r => r.text());
-            const keyRaw = await fetch("obfexkey.obfex").then(r => r.text());
-            
-            // JSON formatını güvenli hale getirme
-            const map = JSON.parse("{" + keyRaw + "}");
-            let rev = {};
-            for (let k in map) rev[map[k]] = k;
+            // 1. Dosyaları çekiyoruz
+            const [sifreliMetin, anahtarRaw] = await Promise.all([
+                fetch("obfexfixingsearch.txt").then(r => r.text()),
+                fetch("obfexkey.obfex").then(r => r.text())
+            ]);
 
-            let out = "", i = 0;
-            while (i < enc.length) {
-                let hit = false;
-                for (let k in rev) {
-                    if (enc.startsWith(k, i)) {
-                        out += rev[k];
-                        i += k.length;
-                        hit = true;
+            // 2. Anahtarı çözülebilir hale getiriyoruz
+            const map = JSON.parse("{" + anahtarRaw + "}");
+            let tersMap = {};
+            for (let harf in map) { tersMap[map[harf]] = harf; }
+
+            // 3. Şifreyi çözüyoruz (En uzun eşleşmeden başlayarak)
+            const siraliAnahtarlar = Object.keys(tersMap).sort((a, b) => b.length - a.length);
+            let cozulmusHtml = "";
+            let i = 0;
+
+            while (i < sifreliMetin.length) {
+                let bulundu = false;
+                for (let anahtar of siraliAnahtarlar) {
+                    if (sifreliMetin.startsWith(anahtar, i)) {
+                        cozulmusHtml += tersMap[anahtar];
+                        i += anahtar.length;
+                        bulundu = true;
                         break;
                     }
                 }
-                if (!hit) { i++; }
+                if (!bulundu) {
+                    cozulmusHtml += sifreliMetin[i];
+                    i++;
+                }
             }
 
-            // Çözülen içeriği yerleştir
+            // 4. Çözülen HTML'i sayfaya basıyoruz
             const root = document.getElementById("root");
-            root.innerHTML = out;
-            
-            // İçerik yüklendiğinde arka planı normale çevir (isteğe bağlı)
-            document.body.style.background = "transparent"; 
-            document.body.style.color = "initial";
+            root.innerHTML = cozulmusHtml;
 
-        } catch (err) {
-            console.error("İçerik yüklenirken hata oluştu:", err);
-            document.getElementById("root").innerHTML = "Bir hata oluştu.";
+            // 5. KRİTİK: İçerikteki scriptleri elle canlandırıyoruz
+            root.querySelectorAll("script").forEach(eskiScript => {
+                const yeniScript = document.createElement("script");
+                Array.from(eskiScript.attributes).forEach(attr => yeniScript.setAttribute(attr.name, attr.value));
+                yeniScript.appendChild(document.createTextNode(eskiScript.innerHTML));
+                document.body.appendChild(yeniScript);
+                eskiScript.remove();
+            });
+
+            // Yükleme stilini kaldırıp asıl site stilini aktif ediyoruz
+            document.body.style.display = "block";
+            document.body.style.height = "auto";
+            document.body.style.overflow = "visible";
+
+        } catch (hata) {
+            console.error("Yükleme Hatası:", hata);
+            document.getElementById("root").innerHTML = "Sistem yüklenirken bir hata oluştu.";
         }
-    })();
+    }
+
+    baslat();
     </script>
 </body>
 </html>
