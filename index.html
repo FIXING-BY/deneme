@@ -2,15 +2,15 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Fixing Search</title>
+    <title>Fixing Search - Private Language</title>
     <style>
-        body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; font-family:sans-serif; }
-        .ring { border:3px solid #1a1a1a; border-top:3px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
+        body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
+        .loader { border:3px solid #1a1a1a; border-top:3px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
         @keyframes spin { 100% { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div id="loading"><div class="ring"></div><p style="margin-left:15px; letter-spacing:1px;">Fixing Dil Çözülüyor...</p></div>
+    <div id="loader"><div class="loader"></div><p style="margin-left:15px">Fixing Dil Çözülüyor...</p></div>
 
     <script>
     async function sitemiAc() {
@@ -21,37 +21,34 @@
             ]);
 
             const map = JSON.parse("{" + (await kRes.text()).trim() + "}");
-            const dataStr = (await dRes.text()).trim();
-            
-            // Ters Map oluştur
-            let reverseMap = {};
-            for (let k in map) { reverseMap[map[k]] = k; }
+            let tersMap = {};
+            for (let k in map) { tersMap[map[k]] = k; }
 
-            // Çözme İşlemi
-            const keys = Object.keys(reverseMap).sort((a,b) => b.length - a.length);
-            let output = "";
+            let dataStr = (await dRes.text()).trim();
+            
+            // "fix" ile başlayan özel kodları ve harfleri ayıklayan algoritma
+            const siraliAnahtarlar = Object.keys(tersMap).sort((a,b) => b.length - a.length);
+            let sonuc = "";
             let i = 0;
 
             while (i < dataStr.length) {
-                let found = false;
-                for (let k of keys) {
-                    if (dataStr.startsWith(k, i)) {
-                        output += reverseMap[k];
-                        i += k.length;
-                        found = true;
+                let buldu = false;
+                for (let anahtar of siraliAnahtarlar) {
+                    if (dataStr.startsWith(anahtar, i)) {
+                        sonuc += tersMap[anahtar];
+                        i += anahtar.length;
+                        buldu = true;
                         break;
                     }
                 }
-                if (!found) { output += dataStr[i]; i++; }
+                if (!buldu) { sonuc += dataStr[i]; i++; }
             }
 
-            // Sayfayı yeni kodla sıfırdan yaz
             document.open();
-            document.write(output.replace(/_sA_/g, "\n").replace(/_sR_/g, "\r").replace(/_sT_/g, "\t"));
+            document.write(sonuc);
             document.close();
-
         } catch (e) {
-            document.body.innerHTML = "Sistem Hatası: " + e.message;
+            document.body.innerHTML = "Hata: " + e.message;
         }
     }
     sitemiAc();
