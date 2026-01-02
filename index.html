@@ -2,27 +2,20 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Fixing Search Ultimate</title>
+    <title>Fixing Search - Ultimate Fix</title>
     <style>
-        body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#050505; font-family:sans-serif; }
-        #loader { display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; color:#00e5ff; }
-        .ring { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; }
+        body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
+        .spinner { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
         @keyframes spin { 100% { transform:rotate(360deg); } }
-        iframe { width:100%; height:100%; border:none; display:none; }
     </style>
 </head>
 <body>
-    <div id="loader"><div class="ring"></div><p>Sistem Çözülüyor...</p></div>
-    <iframe id="finalFrame"></iframe>
+    <div id="loading-box"><div class="spinner"></div><p style="margin-top:15px">Sistem ve Tuşlar Aktif Ediliyor...</p></div>
 
     <script>
     async function sitemiAc() {
         try {
-            const [kRes, dRes] = await Promise.all([
-                fetch("obfexkey.obfex"), 
-                fetch("obfexfixingsearch.txt")
-            ]);
-
+            const [kRes, dRes] = await Promise.all([fetch("obfexkey.obfex"), fetch("obfexfixingsearch.txt")]);
             const map = JSON.parse(await kRes.text());
             const dataStr = (await dRes.text()).trim();
             
@@ -30,36 +23,42 @@
             for (let k in map) { tersMap[map[k]] = k; }
             const keys = Object.keys(tersMap).sort((a,b) => b.length - a.length);
             
-            let html = "";
+            let htmlContent = "";
             let i = 0;
             while (i < dataStr.length) {
                 let found = false;
                 for (let k of keys) {
                     if (dataStr.startsWith(k, i)) {
                         let h = tersMap[k];
-                        html += (h === "fix0" ? " " : (h === "fix29" ? "\n" : h));
+                        htmlContent += (h === "fix0" ? " " : (h === "fix29" ? "\n" : h));
                         i += k.length;
                         found = true;
                         break;
                     }
                 }
-                if (!found) { html += dataStr[i]; i++; }
+                if (!found) { htmlContent += dataStr[i]; i++; }
             }
 
-            const frame = document.getElementById("finalFrame");
-            const loader = document.getElementById("loader");
-            
-            // İçeriği iframe'e basıyoruz (Tuşların çalışması için en sağlam yol)
-            const frameDoc = frame.contentWindow.document;
-            frameDoc.open();
-            frameDoc.write(html);
-            frameDoc.close();
+            // 1. Mevcut sayfayı temizle ve HTML'i bas
+            document.open();
+            document.write(htmlContent);
+            document.close();
 
-            loader.style.display = "none";
-            frame.style.display = "block";
+            // 2. TUŞLARIN ÇALIŞMASI İÇİN KRİTİK HAMLE:
+            // Sayfadaki tüm scriptleri bul ve manuel olarak yeniden oluştur
+            setTimeout(() => {
+                const allScripts = document.querySelectorAll("script");
+                allScripts.forEach(oldScript => {
+                    const newScript = document.createElement("script");
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+                console.log("Fixing: Tüm fonksiyonlar uyandırıldı.");
+            }, 100);
 
         } catch (e) {
-            document.getElementById("loader").innerHTML = "Hata: " + e.message;
+            document.body.innerHTML = "Hata oluştu: " + e.message;
         }
     }
     sitemiAc();
