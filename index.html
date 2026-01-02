@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fixing Search</title>
     <style>
-        /* Siten yüklenene kadar görünecek olan siyah arka plan ve yükleme animasyonu */
+        /* Yükleme ekranı stili */
         body { 
             margin: 0; 
             background: #050505; 
@@ -15,29 +15,27 @@
             align-items: center; 
             height: 100vh; 
             overflow: hidden; 
-            font-family: sans-serif;
+            font-family: 'Inter', sans-serif;
         }
-        .loader {
-            text-align: center;
-        }
-        .ring {
+        .loader-container { text-align: center; }
+        .loader-ring {
             width: 50px; height: 50px;
             border: 3px solid #1a1a1a;
             border-top: 3px solid #00e5ff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 10px;
+            margin: 0 auto 15px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #obfex-tag { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.2; }
+        #obfex-tag { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.2; pointer-events: none; }
     </style>
 </head>
 <body>
 
     <div id="root">
-        <div class="loader">
-            <div class="ring"></div>
-            <p>Sistem Yükleniyor...</p>
+        <div class="loader-container">
+            <div class="loader-ring"></div>
+            <p style="letter-spacing: 2px; font-size: 12px; color: #666;">SİSTEM ÇÖZÜLÜYOR...</p>
         </div>
     </div>
     
@@ -46,18 +44,24 @@
     <script>
     async function baslat() {
         try {
-            // 1. Dosyaları çekiyoruz
+            // 1. Dosyaları sunucudan çekiyoruz
             const [sifreliMetin, anahtarRaw] = await Promise.all([
-                fetch("obfexfixingsearch.txt").then(r => r.text()),
-                fetch("obfexkey.obfex").then(r => r.text())
+                fetch("obfexfixingsearch.txt").then(r => {
+                    if(!r.ok) throw new Error("TXT dosyası bulunamadı!");
+                    return r.text();
+                }),
+                fetch("obfexkey.obfex").then(r => {
+                    if(!r.ok) throw new Error("Anahtar dosyası bulunamadı!");
+                    return r.text();
+                })
             ]);
 
-            // 2. Anahtarı çözülebilir hale getiriyoruz
+            // 2. Anahtar tablosunu (Map) oluşturuyoruz
             const map = JSON.parse("{" + anahtarRaw + "}");
             let tersMap = {};
             for (let harf in map) { tersMap[map[harf]] = harf; }
 
-            // 3. Şifreyi çözüyoruz (En uzun eşleşmeden başlayarak)
+            // 3. Şifre çözme motoru (Hızlı eşleşme algoritması)
             const siraliAnahtarlar = Object.keys(tersMap).sort((a, b) => b.length - a.length);
             let cozulmusHtml = "";
             let i = 0;
@@ -78,31 +82,45 @@
                 }
             }
 
-            // 4. Çözülen HTML'i sayfaya basıyoruz
-            const root = document.getElementById("root");
-            root.innerHTML = cozulmusHtml;
+            // 4. Çözülen içeriği DOMParser ile işliyoruz
+            const parser = new DOMParser();
+            const yeniDoc = parser.parseFromString(cozulmusHtml, 'text/html');
 
-            // 5. KRİTİK: İçerikteki scriptleri elle canlandırıyoruz
-            root.querySelectorAll("script").forEach(eskiScript => {
-                const yeniScript = document.createElement("script");
-                Array.from(eskiScript.attributes).forEach(attr => yeniScript.setAttribute(attr.name, attr.value));
-                yeniScript.appendChild(document.createTextNode(eskiScript.innerHTML));
-                document.body.appendChild(yeniScript);
-                eskiScript.remove();
+            // CSS Stillerini Aktar
+            yeniDoc.querySelectorAll("style").forEach(stil => {
+                document.head.appendChild(stil.cloneNode(true));
             });
 
-            // Yükleme stilini kaldırıp asıl site stilini aktif ediyoruz
-            document.body.style.display = "block";
-            document.body.style.height = "auto";
-            document.body.style.overflow = "visible";
+            // HTML İçeriğini Aktar
+            const root = document.getElementById("root");
+            root.innerHTML = yeniDoc.body.innerHTML;
+            
+            // Body ID ve Class aktarımı (Tema çalışması için önemli)
+            if(yeniDoc.body.id) document.body.id = yeniDoc.body.id;
+            if(yeniDoc.body.className) document.body.className = yeniDoc.body.className;
+
+            // 5. Scriptleri (JS) manuel olarak tetikliyoruz
+            yeniDoc.querySelectorAll("script").forEach(eskiScript => {
+                const yeniScript = document.createElement("script");
+                Array.from(eskiScript.attributes).forEach(attr => yeniScript.setAttribute(attr.name, attr.value));
+                yeniScript.textContent = eskiScript.textContent;
+                document.body.appendChild(yeniScript);
+            });
+
+            // Yükleme ekranını devreden çıkarıyoruz
+            document.body.style.display = "flex"; // Orijinal tasarımdaki flex yapısı
+            document.body.style.height = "100vh";
+            document.body.style.overflow = "hidden";
 
         } catch (hata) {
-            console.error("Yükleme Hatası:", hata);
-            document.getElementById("root").innerHTML = "Sistem yüklenirken bir hata oluştu.";
+            console.error("Sistem Hatası:", hata);
+            document.getElementById("root").innerHTML = 
+                `<div style="color:red; font-size:12px;">Yükleme Başarısız: ${hata.message}</div>`;
         }
     }
 
-    baslat();
+    // Sayfa hazır olduğunda başlat
+    window.addEventListener('DOMContentLoaded', baslat);
     </script>
 </body>
 </html>
