@@ -4,33 +4,59 @@
     <meta charset="UTF-8">
     <title>Fixing Search</title>
     <style>
-        body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
-        .loader { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
-        @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+        body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; font-family:sans-serif; }
+        .loader { border:3px solid #1a1a1a; border-top:3px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
+        @keyframes spin { 100% { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div id="loading"><div class="loader"></div><p>Yükleniyor...</p></div>
+    <div id="loading"><div class="loader"></div><p style="margin-left:15px; letter-spacing:1px;">SİSTEM ANAHTARLA ÇÖZÜLÜYOR...</p></div>
 
     <script>
-    async function yukle() {
+    async function sitemiAc() {
         try {
-            // Şifreli dosyayı oku
-            const r = await fetch("obfexfixingsearch.txt");
-            let data = await r.text();
-            
-            // v2 Çözme Mantığı: Ters çevir ve Base64'ten kurtar
-            let dec = decodeURIComponent(escape(atob(data.split("").reverse().join(""))));
+            const [kRes, dRes] = await Promise.all([
+                fetch("obfexkey.obfex"),
+                fetch("obfexfixingsearch.txt")
+            ]);
 
-            // Sayfayı yeniden inşa et
+            const keyStr = (await kRes.text()).trim();
+            const dataStr = (await dRes.text()).trim();
+
+            const map = JSON.parse("{" + keyStr + "}");
+            let tersMap = {};
+            for (let k in map) { tersMap[map[k]] = k; }
+
+            const siraliAnahtarlar = Object.keys(tersMap).sort((a,b) => b.length - a.length);
+            let sonuc = "";
+            let i = 0;
+
+            while (i < dataStr.length) {
+                let buldu = false;
+                for (let anahtar of siraliAnahtarlar) {
+                    if (dataStr.startsWith(anahtar, i)) {
+                        let harf = tersMap[anahtar];
+                        if(harf === "[n]") harf = "\n";
+                        if(harf === "[r]") harf = "\r";
+                        if(harf === "[t]") harf = "\t";
+                        sonuc += harf;
+                        i += anahtar.length;
+                        buldu = true;
+                        break;
+                    }
+                }
+                if (!buldu) { sonuc += dataStr[i]; i++; }
+            }
+
             document.open();
-            document.write(dec);
+            document.write(sonuc);
             document.close();
+
         } catch (e) {
-            document.body.innerHTML = "Hata: Dosya okunamadı!";
+            document.body.innerHTML = "HATA: " + e.message;
         }
     }
-    yukle();
+    sitemiAc();
     </script>
 </body>
 </html>
