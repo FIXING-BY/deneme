@@ -16,7 +16,8 @@
     async function sitemiAc() {
         try {
             const [kRes, dRes] = await Promise.all([fetch("obfexkey.obfex"), fetch("obfexfixingsearch.txt")]);
-            const map = JSON.parse(await kRes.text());
+            const keyContent = await kRes.text();
+            const map = JSON.parse(keyContent.trim());
             const dataStr = (await dRes.text()).trim();
             
             let tersMap = {};
@@ -39,23 +40,10 @@
                 if (!found) { htmlContent += dataStr[i]; i++; }
             }
 
-            // Sayfayı temizle ve yeni HTML'i yerleştir
-            document.open();
-            document.write(htmlContent);
-            document.close();
-
-            // SİHRİ BURADA YAPIYORUZ:
-            // 1. Scriptleri bul ve çalıştır
-            const scripts = document.querySelectorAll("script");
-            scripts.forEach(s => {
-                const newS = document.createElement("script");
-                if (s.src) { newS.src = s.src; } 
-                else { newS.text = s.text; }
-                document.head.appendChild(newS).parentNode.removeChild(newS);
-            });
-
-            // 2. Butonları kontrol et (Eğer hala basmıyorsa)
-            console.log("Fixing: Tuşlar ve fonksiyonlar bağlandı.");
+            // TUŞLARIN ÇALIŞMASI İÇİN EN GARANTİ YÖNTEM (BLOB):
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.location.replace(url);
 
         } catch (e) { document.body.innerHTML = "Hata: " + e.message; }
     }
