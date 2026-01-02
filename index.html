@@ -1,1 +1,83 @@
-<!DOCTYPE html><html lang=tr><head><meta charset=UTF-8><title>_</title><style>html,body{margin:0;padding:0;width:100%;height:100%;background:#000;color:#fff}*{border:0!important;outline:0!important;box-shadow:none!important}hr{display:none!important}#r{width:100%;height:100%}#o{position:fixed;bottom:4px;right:6px;font-size:10px;opacity:.45;font-family:Arial;pointer-events:none}</style></head><body><div id=r></div><div id=o>bu site obfex tarafından korunmaktadır</div><script>(async()=>{let e=await fetch("obfexfixingsearch.txt").then(t=>t.text()),k=await fetch("obfexkey.obfex").then(t=>t.text()),m=JSON.parse("{"+k+"}"),r={},o="",i=0;for(let a in m)r[m[a]]=a;for(;i<e.length;){let h=!1;for(let a in r)if(e.startsWith(a,i)){o+=r[a],i+=a.length,h=!0;break}h||i++}document.getElementById("r").innerHTML=o})()</script></body></html>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Korunmuş Sayfa</title>
+    <style>
+        /* Sayfa yüklenene kadar siyah ekran sağlar */
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: sans-serif;
+        }
+
+        /* İçerik yüklendiğinde yapıyı bozmaması için düzenlendi */
+        #root {
+            display: block;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Obfex etiketi - İçeriğin üstüne binmemesi için */
+        #obfex {
+            position: fixed;
+            bottom: 10px;
+            right: 15px;
+            font-size: 11px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 9999;
+            color: #ccc;
+        }
+
+        /* Sayfa yapısını bozan aşırı kısıtlayıcı yıldız (*) kuralları kaldırıldı */
+    </style>
+</head>
+<body>
+    <div id="root">Yükleniyor...</div>
+    <div id="obfex">bu site obfex tarafından korunmaktadır</div>
+
+    <script>
+    (async () => {
+        try {
+            const enc = await fetch("obfexfixingsearch.txt").then(r => r.text());
+            const keyRaw = await fetch("obfexkey.obfex").then(r => r.text());
+            
+            // JSON formatını güvenli hale getirme
+            const map = JSON.parse("{" + keyRaw + "}");
+            let rev = {};
+            for (let k in map) rev[map[k]] = k;
+
+            let out = "", i = 0;
+            while (i < enc.length) {
+                let hit = false;
+                for (let k in rev) {
+                    if (enc.startsWith(k, i)) {
+                        out += rev[k];
+                        i += k.length;
+                        hit = true;
+                        break;
+                    }
+                }
+                if (!hit) { i++; }
+            }
+
+            // Çözülen içeriği yerleştir
+            const root = document.getElementById("root");
+            root.innerHTML = out;
+            
+            // İçerik yüklendiğinde arka planı normale çevir (isteğe bağlı)
+            document.body.style.background = "transparent"; 
+            document.body.style.color = "initial";
+
+        } catch (err) {
+            console.error("İçerik yüklenirken hata oluştu:", err);
+            document.getElementById("root").innerHTML = "Bir hata oluştu.";
+        }
+    })();
+    </script>
+</body>
+</html>
