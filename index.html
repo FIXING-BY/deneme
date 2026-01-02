@@ -7,45 +7,75 @@
         body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
         .spinner { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
         @keyframes spin { 100% { transform:rotate(360deg); } }
+        
+        /* Koruma Yazısı Stili */
+        #obfex-badge {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0, 229, 255, 0.1);
+            color: #00e5ff;
+            padding: 8px 15px;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 5px;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            z-index: 999999;
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.1);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <div id="loader"><div class="spinner"></div><p style="margin-top:15px">Sistem ve Tuşlar Zorla Uyandırılıyor...</p></div>
+    <div id="loader"><div class="spinner"></div><p style="margin-top:15px">Güvenlik Katmanları Çözülüyor...</p></div>
 
     <script>
+    function b32Decode(s) {
+        const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        let parts = [], quot = 0, len = 0;
+        for (let i = 0; i < s.length && s[i] !== '='; i++) {
+            let val = alphabet.indexOf(s[i].toUpperCase());
+            if (val === -1) continue;
+            quot = (quot << 5) | val; len += 5;
+            if (len >= 8) { parts.push(String.fromCharCode((quot >> (len - 8)) & 255)); len -= 8; }
+        }
+        return parts.join('');
+    }
+
     async function sitemiAc() {
         try {
             const [kRes, dRes] = await Promise.all([fetch("obfexkey.obfex"), fetch("obfexfixingsearch.txt")]);
-            const keyContent = await kRes.text();
-            const map = JSON.parse(keyContent.trim());
-            const dataStr = (await dRes.text()).trim();
-            
-            let tersMap = {};
-            for (let k in map) { tersMap[map[k]] = k; }
-            const keys = Object.keys(tersMap).sort((a,b) => b.length - a.length);
-            
-            let htmlContent = "";
-            let i = 0;
-            while (i < dataStr.length) {
-                let found = false;
-                for (let k of keys) {
-                    if (dataStr.startsWith(k, i)) {
-                        let h = tersMap[k];
-                        htmlContent += (h === "fix0" ? " " : (h === "fix29" ? "\n" : h));
-                        i += k.length;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) { htmlContent += dataStr[i]; i++; }
-            }
+            const keyCheck = (await kRes.text()).trim();
+            const encryptedData = (await dRes.text()).trim();
 
-            // TUŞLARIN ÇALIŞMASI İÇİN EN GARANTİ YÖNTEM (BLOB):
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            window.location.replace(url);
+            if(keyCheck !== "FIXING_ULTIMATE_SECURE_KEY_2026") throw new Error("Geçersiz Anahtar!");
 
-        } catch (e) { document.body.innerHTML = "Hata: " + e.message; }
+            let step1 = atob(encryptedData);
+            let step2 = step1.split("").reverse().join("");
+            let step3 = b32Decode(step2);
+            let finalHtml = decodeURIComponent(escape(step3));
+
+            document.open();
+            document.write(finalHtml);
+            
+            // KORUMA YAZISINI BURADA EKLIYORUZ
+            const badge = document.createElement("div");
+            badge.id = "obfex-badge";
+            badge.innerHTML = "Site OBFEX Tarafından Korunmaktadır";
+            document.body.appendChild(badge);
+            
+            // Gerekli stili tekrar ekle (document.write her şeyi sildiği için)
+            const style = document.createElement("style");
+            style.innerHTML = "#obfex-badge { position:fixed; bottom:15px; right:15px; background:rgba(0,229,255,0.1); color:#00e5ff; padding:8px 15px; border:1px solid rgba(0,229,255,0.3); border-radius:5px; font-size:11px; z-index:999999; font-weight:bold; letter-spacing:1px; backdrop-filter:blur(5px); }";
+            document.head.appendChild(style);
+
+            document.close();
+        } catch (e) {
+            document.body.innerHTML = "<div style='text-align:center;'><h2>Sistem Hatası</h2><p>"+e.message+"</p></div>";
+        }
     }
     sitemiAc();
     </script>
