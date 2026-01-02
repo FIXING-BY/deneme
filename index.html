@@ -2,90 +2,35 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fixing Search</title>
     <style>
-        /* Yükleme ekranı: Site çözülene kadar bu görünür */
-        body { 
-            margin: 0; 
-            background: #050505; 
-            color: white; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden; 
-            font-family: sans-serif; 
-        }
-        .loader-box { text-align: center; }
-        .ring { 
-            width: 45px; height: 45px; 
-            border: 3px solid #1a1a1a; 
-            border-top: 3px solid #00e5ff; 
-            border-radius: 50%; 
-            animation: spin 1s linear infinite; 
-            margin: 0 auto 15px; 
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .text { letter-spacing: 3px; font-size: 11px; color: #444; text-transform: uppercase; }
+        body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
+        .loader { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
+        @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
     </style>
 </head>
 <body>
-
-    <div class="loader-box">
-        <div class="ring"></div>
-        <div class="text">Sistem Çözülüyor...</div>
-    </div>
+    <div id="loading"><div class="loader"></div><p>Yükleniyor...</p></div>
 
     <script>
-    async function sitemiYukle() {
+    async function yukle() {
         try {
-            // 1. Şifreli TXT ve Anahtar dosyasını indiriyoruz
-            const [sifreliVeri, anahtarTablosu] = await Promise.all([
-                fetch("obfexfixingsearch.txt").then(r => r.text()),
-                fetch("obfexkey.obfex").then(r => r.text())
-            ]);
+            // Şifreli dosyayı oku
+            const r = await fetch("obfexfixingsearch.txt");
+            let data = await r.text();
+            
+            // v2 Çözme Mantığı: Ters çevir ve Base64'ten kurtar
+            let dec = decodeURIComponent(escape(atob(data.split("").reverse().join(""))));
 
-            // 2. Anahtar haritasını (Map) oluşturuyoruz
-            const map = JSON.parse("{" + anahtarTablosu + "}");
-            let tersMap = {};
-            for (let k in map) { tersMap[map[k]] = k; }
-
-            // 3. Şifre çözme işlemi
-            const siraliAnahtarlar = Object.keys(tersMap).sort((a, b) => b.length - a.length);
-            let cozulmusKod = "";
-            let i = 0;
-
-            while (i < sifreliVeri.length) {
-                let buldu = false;
-                for (let anahtar of siraliAnahtarlar) {
-                    if (sifreliVeri.startsWith(anahtar, i)) {
-                        cozulmusKod += tersMap[anahtar];
-                        i += anahtar.length;
-                        buldu = true;
-                        break;
-                    }
-                }
-                if (!buldu) {
-                    cozulmusKod += sifreliVeri[i];
-                    i++;
-                }
-            }
-
-            // 4. KRİTİK ADIM: Mevcut sayfayı tamamen temizle ve çözülen kodu sıfırdan yaz
-            // Bu yöntem tarayıcının <style> ve <script> etiketlerini tanımasını zorunlu kılar.
+            // Sayfayı yeniden inşa et
             document.open();
-            document.write(cozulmusKod);
+            document.write(dec);
             document.close();
-
-        } catch (hata) {
-            console.error("Hata:", hata);
-            document.body.innerHTML = "<div style='color:#ff3c3c; font-size:12px;'>Yükleme hatası! Dosyaları kontrol edin.</div>";
+        } catch (e) {
+            document.body.innerHTML = "Hata: Dosya okunamadı!";
         }
     }
-
-    // Çalıştır
-    sitemiYukle();
+    yukle();
     </script>
 </body>
 </html>
