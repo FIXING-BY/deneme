@@ -25,30 +25,28 @@
                 fetch("obfexfixingsearch.txt")
             ]);
 
-            if(!kRes.ok || !dRes.ok) throw new Error("Dosyalar eksik!");
+            if(!kRes.ok || !dRes.ok) throw new Error("Dosyalar bulunamadı!");
 
             const keyContent = await kRes.text();
-            // JSON hatasını önlemek için kontrol
+            // JSON parse etmeden önce olası gizli karakterleri temizle
             const map = JSON.parse(keyContent.trim());
             
             let tersMap = {};
             for (let k in map) { tersMap[map[k]] = k; }
 
             let dataStr = (await dRes.text()).trim();
+            const siraliKeys = Object.keys(tersMap).sort((a,b) => b.length - a.length);
             
-            const siraliAnahtarlar = Object.keys(tersMap).sort((a,b) => b.length - a.length);
             let sonuc = "";
             let i = 0;
-
             while (i < dataStr.length) {
                 let buldu = false;
-                for (let anahtar of siraliAnahtarlar) {
+                for (let anahtar of siraliKeys) {
                     if (dataStr.startsWith(anahtar, i)) {
                         let harf = tersMap[anahtar];
-                        // Özel kodları gerçek karakterlere çevir
+                        // Özel kodları gerçek karakterlere döndür
                         if(harf === "fix0") harf = " ";
                         if(harf === "fix29") harf = "\n";
-                        // Diğer fix kodları zaten map içinde karakter olarak duruyor
                         sonuc += harf;
                         i += anahtar.length;
                         buldu = true;
@@ -62,8 +60,7 @@
             document.write(sonuc);
             document.close();
         } catch (e) {
-            console.error(e);
-            document.getElementById("loader").innerHTML = `<p style="color:#ff4444; text-align:center;">Sistem Hatası: ${e.message}<br><small>Key dosyasındaki parantezleri kontrol et!</small></p>`;
+            document.getElementById("loader").innerHTML = `<p style="color:#ff4444;">HATA: ${e.message}</p>`;
         }
     }
     sitemiAc();
