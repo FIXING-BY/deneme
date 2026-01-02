@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fixing Search</title>
     <style>
-        /* Yükleme ekranı stili */
+        /* Yükleme ekranı: Site çözülene kadar bu görünür */
         body { 
             margin: 0; 
             background: #050505; 
@@ -15,112 +15,77 @@
             align-items: center; 
             height: 100vh; 
             overflow: hidden; 
-            font-family: 'Inter', sans-serif;
+            font-family: sans-serif; 
         }
-        .loader-container { text-align: center; }
-        .loader-ring {
-            width: 50px; height: 50px;
-            border: 3px solid #1a1a1a;
-            border-top: 3px solid #00e5ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+        .loader-box { text-align: center; }
+        .ring { 
+            width: 45px; height: 45px; 
+            border: 3px solid #1a1a1a; 
+            border-top: 3px solid #00e5ff; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            margin: 0 auto 15px; 
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #obfex-tag { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.2; pointer-events: none; }
+        .text { letter-spacing: 3px; font-size: 11px; color: #444; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <div id="root">
-        <div class="loader-container">
-            <div class="loader-ring"></div>
-            <p style="letter-spacing: 2px; font-size: 12px; color: #666;">SİSTEM ÇÖZÜLÜYOR...</p>
-        </div>
+    <div class="loader-box">
+        <div class="ring"></div>
+        <div class="text">Sistem Çözülüyor...</div>
     </div>
-    
-    <div id="obfex-tag">protected by obfex</div>
 
     <script>
-    async function baslat() {
+    async function sitemiYukle() {
         try {
-            // 1. Dosyaları sunucudan çekiyoruz
-            const [sifreliMetin, anahtarRaw] = await Promise.all([
-                fetch("obfexfixingsearch.txt").then(r => {
-                    if(!r.ok) throw new Error("TXT dosyası bulunamadı!");
-                    return r.text();
-                }),
-                fetch("obfexkey.obfex").then(r => {
-                    if(!r.ok) throw new Error("Anahtar dosyası bulunamadı!");
-                    return r.text();
-                })
+            // 1. Şifreli TXT ve Anahtar dosyasını indiriyoruz
+            const [sifreliVeri, anahtarTablosu] = await Promise.all([
+                fetch("obfexfixingsearch.txt").then(r => r.text()),
+                fetch("obfexkey.obfex").then(r => r.text())
             ]);
 
-            // 2. Anahtar tablosunu (Map) oluşturuyoruz
-            const map = JSON.parse("{" + anahtarRaw + "}");
+            // 2. Anahtar haritasını (Map) oluşturuyoruz
+            const map = JSON.parse("{" + anahtarTablosu + "}");
             let tersMap = {};
-            for (let harf in map) { tersMap[map[harf]] = harf; }
+            for (let k in map) { tersMap[map[k]] = k; }
 
-            // 3. Şifre çözme motoru (Hızlı eşleşme algoritması)
+            // 3. Şifre çözme işlemi
             const siraliAnahtarlar = Object.keys(tersMap).sort((a, b) => b.length - a.length);
-            let cozulmusHtml = "";
+            let cozulmusKod = "";
             let i = 0;
 
-            while (i < sifreliMetin.length) {
-                let bulundu = false;
+            while (i < sifreliVeri.length) {
+                let buldu = false;
                 for (let anahtar of siraliAnahtarlar) {
-                    if (sifreliMetin.startsWith(anahtar, i)) {
-                        cozulmusHtml += tersMap[anahtar];
+                    if (sifreliVeri.startsWith(anahtar, i)) {
+                        cozulmusKod += tersMap[anahtar];
                         i += anahtar.length;
-                        bulundu = true;
+                        buldu = true;
                         break;
                     }
                 }
-                if (!bulundu) {
-                    cozulmusHtml += sifreliMetin[i];
+                if (!buldu) {
+                    cozulmusKod += sifreliVeri[i];
                     i++;
                 }
             }
 
-            // 4. Çözülen içeriği DOMParser ile işliyoruz
-            const parser = new DOMParser();
-            const yeniDoc = parser.parseFromString(cozulmusHtml, 'text/html');
-
-            // CSS Stillerini Aktar
-            yeniDoc.querySelectorAll("style").forEach(stil => {
-                document.head.appendChild(stil.cloneNode(true));
-            });
-
-            // HTML İçeriğini Aktar
-            const root = document.getElementById("root");
-            root.innerHTML = yeniDoc.body.innerHTML;
-            
-            // Body ID ve Class aktarımı (Tema çalışması için önemli)
-            if(yeniDoc.body.id) document.body.id = yeniDoc.body.id;
-            if(yeniDoc.body.className) document.body.className = yeniDoc.body.className;
-
-            // 5. Scriptleri (JS) manuel olarak tetikliyoruz
-            yeniDoc.querySelectorAll("script").forEach(eskiScript => {
-                const yeniScript = document.createElement("script");
-                Array.from(eskiScript.attributes).forEach(attr => yeniScript.setAttribute(attr.name, attr.value));
-                yeniScript.textContent = eskiScript.textContent;
-                document.body.appendChild(yeniScript);
-            });
-
-            // Yükleme ekranını devreden çıkarıyoruz
-            document.body.style.display = "flex"; // Orijinal tasarımdaki flex yapısı
-            document.body.style.height = "100vh";
-            document.body.style.overflow = "hidden";
+            // 4. KRİTİK ADIM: Mevcut sayfayı tamamen temizle ve çözülen kodu sıfırdan yaz
+            // Bu yöntem tarayıcının <style> ve <script> etiketlerini tanımasını zorunlu kılar.
+            document.open();
+            document.write(cozulmusKod);
+            document.close();
 
         } catch (hata) {
-            console.error("Sistem Hatası:", hata);
-            document.getElementById("root").innerHTML = 
-                `<div style="color:red; font-size:12px;">Yükleme Başarısız: ${hata.message}</div>`;
+            console.error("Hata:", hata);
+            document.body.innerHTML = "<div style='color:#ff3c3c; font-size:12px;'>Yükleme hatası! Dosyaları kontrol edin.</div>";
         }
     }
 
-    // Sayfa hazır olduğunda başlat
-    window.addEventListener('DOMContentLoaded', baslat);
+    // Çalıştır
+    sitemiYukle();
     </script>
 </body>
 </html>
