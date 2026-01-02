@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Fixing Search - Private Language</title>
+    <title>Fixing Search Ultimate</title>
     <style>
         body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
         .loader { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
@@ -10,58 +10,47 @@
     </style>
 </head>
 <body>
-    <div id="loader">
-        <div style="text-align:center;">
-            <div class="loader"></div>
-            <p style="margin-top:20px; letter-spacing:1px; font-size:13px;">Fixing Dil Çözülüyor...</p>
-        </div>
-    </div>
+    <div id="loading-screen"><div class="loader"></div><p>Sistem ve Fonksiyonlar Yükleniyor...</p></div>
 
     <script>
     async function sitemiAc() {
         try {
-            const [kRes, dRes] = await Promise.all([
-                fetch("obfexkey.obfex"),
-                fetch("obfexfixingsearch.txt")
-            ]);
-
-            if(!kRes.ok || !dRes.ok) throw new Error("Dosyalar bulunamadı!");
-
-            const keyContent = await kRes.text();
-            // JSON parse etmeden önce olası gizli karakterleri temizle
-            const map = JSON.parse(keyContent.trim());
+            const [kRes, dRes] = await Promise.all([fetch("obfexkey.obfex"), fetch("obfexfixingsearch.txt")]);
+            const map = JSON.parse(await kRes.text());
+            const dataStr = (await dRes.text()).trim();
             
             let tersMap = {};
             for (let k in map) { tersMap[map[k]] = k; }
-
-            let dataStr = (await dRes.text()).trim();
-            const siraliKeys = Object.keys(tersMap).sort((a,b) => b.length - a.length);
+            const keys = Object.keys(tersMap).sort((a,b) => b.length - a.length);
             
-            let sonuc = "";
+            let html = "";
             let i = 0;
             while (i < dataStr.length) {
-                let buldu = false;
-                for (let anahtar of siraliKeys) {
-                    if (dataStr.startsWith(anahtar, i)) {
-                        let harf = tersMap[anahtar];
-                        // Özel kodları gerçek karakterlere döndür
-                        if(harf === "fix0") harf = " ";
-                        if(harf === "fix29") harf = "\n";
-                        sonuc += harf;
-                        i += anahtar.length;
-                        buldu = true;
+                let found = false;
+                for (let k of keys) {
+                    if (dataStr.startsWith(k, i)) {
+                        let h = tersMap[k];
+                        html += (h === "fix0" ? " " : (h === "fix29" ? "\n" : h));
+                        i += k.length;
+                        found = true;
                         break;
                     }
                 }
-                if (!buldu) { sonuc += dataStr[i]; i++; }
+                if (!found) { html += dataStr[i]; i++; }
             }
 
-            document.open();
-            document.write(sonuc);
-            document.close();
-        } catch (e) {
-            document.getElementById("loader").innerHTML = `<p style="color:#ff4444;">HATA: ${e.message}</p>`;
-        }
+            // TUŞLARIN ÇALIŞMASI İÇİN KRİTİK NOKTA:
+            document.documentElement.innerHTML = html;
+            
+            // Scriptleri manuel olarak yeniden çalıştır
+            const scripts = document.getElementsByTagName("script");
+            for (let s of scripts) {
+                const newScript = document.createElement("script");
+                if (s.src) { newScript.src = s.src; } 
+                else { newScript.textContent = s.textContent; }
+                document.body.appendChild(newScript);
+            }
+        } catch (e) { document.body.innerHTML = "Hata: " + e.message; }
     }
     sitemiAc();
     </script>
