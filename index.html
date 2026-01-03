@@ -5,13 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Yükleniyor...</title>
     <style>
-        body { margin:0; background:#050505; color:#00e5ff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
-        .spinner { border:4px solid #1a1a1a; border-top:4px solid #00e5ff; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
+        body { margin:0; background:#050505; color:#ffffff; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; }
+        .spinner { border:3px solid #1a1a1a; border-top:3px solid #ffffff; border-radius:50%; width:35px; height:35px; animation:spin 1s linear infinite; }
         @keyframes spin { 100% { transform:rotate(360deg); } }
+        #loader { text-align: center; }
     </style>
 </head>
 <body>
-    <div id="loader"><div class="spinner"></div><p style="margin-top:15px; letter-spacing:1px;">OBFEX GÜVENLİK KONTROLÜ...</p></div>
+    <div id="loader">
+        <div class="spinner"></div>
+        <p style="margin-top:15px; letter-spacing:2px; font-size:12px; opacity:0.7;">OBFEX GÜVENLİK KONTROLÜ...</p>
+    </div>
 
     <script>
     // Base32 Standart Çözücü
@@ -30,10 +34,12 @@
 
     async function sitemiAc() {
         try {
+            // Verileri çekme
             const [kRes, dRes] = await Promise.all([fetch("obfexkey.obfex"), fetch("obfexfixingsearch.txt")]);
             const keyCheck = (await kRes.text()).trim();
             const encryptedData = (await dRes.text()).trim();
 
+            // Anahtar kontrolü
             if(keyCheck !== "FIXING_ULTIMATE_SECURE_KEY_2026") throw new Error("Yetkisiz Erişim!");
 
             // Çözme İşlemi: Base64 -> Reverse -> Base32
@@ -46,18 +52,38 @@
             document.open();
             document.write(finalHtml);
             
-            // OBFEX Koruma Rozeti Ekleme
+            // Yeni Nesil Modern Beyaz Rozet
             const badge = document.createElement("div");
-            badge.style = "position:fixed; bottom:15px; right:15px; background:rgba(0,229,255,0.1); color:#00e5ff; padding:7px 12px; border:1px solid rgba(0,229,255,0.4); border-radius:4px; font-size:10px; z-index:999999; font-weight:bold; letter-spacing:1px; backdrop-filter:blur(4px); pointer-events:none; font-family:sans-serif; box-shadow: 0 0 10px rgba(0,229,255,0.2);";
-            badge.innerHTML = "🛡️ Site OBFEX Tarafından Korunmaktadır";
+            badge.style = `
+                position: fixed; 
+                bottom: 12px; 
+                right: 12px; 
+                background: rgba(255, 255, 255, 0.08); 
+                color: #ffffff; 
+                padding: 4px 10px; 
+                border: 1px solid rgba(255, 255, 255, 0.2); 
+                border-radius: 50px; 
+                font-size: 9px; 
+                z-index: 999999; 
+                font-weight: 500; 
+                letter-spacing: 0.8px; 
+                backdrop-filter: blur(10px); 
+                pointer-events: none; 
+                font-family: 'Inter', sans-serif; 
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+                text-transform: uppercase;
+            `;
+            badge.innerHTML = "🛡️ OBFEX SECURE";
             document.body.appendChild(badge);
 
             document.close();
         } catch (e) {
-            document.body.innerHTML = "<div style='text-align:center; color:#ff4444;'><h2>ERİŞİM REDDEDİLDİ</h2><p>"+e.message+"</p></div>";
+            document.body.innerHTML = "<div style='text-align:center; color:#ff4444; font-family:sans-serif;'><h2>ERİŞİM REDDEDİLDİ</h2><p>"+e.message+"</p></div>";
         }
     }
+    
     sitemiAc();
     </script>
 </body>
 </html>
+
