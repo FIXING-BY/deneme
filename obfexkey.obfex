@@ -1,5 +1,6 @@
 (async function() {
-    // Base32 Çözücü Fonksiyon
+    console.log("OBFEX Motoru Çalışıyor..."); // F12'de bunu görmelisin
+
     const b32d = (s) => {
         const a = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
         let p = [], q = 0, l = 0;
@@ -14,28 +15,29 @@
     };
 
     try {
-        // 1. Şifreli veriyi içeren dosyayı çek
         const res = await fetch("obfexfixingsearch.txt");
-        if(!res.ok) throw 0;
+        if(!res.ok) throw "Veri dosyası (obfexfixingsearch.txt) bulunamadı!";
+        
         const encryptedData = (await res.text()).trim();
+        console.log("Şifreli veri okundu.");
 
-        // 2. Kırma İşlemi: Base64 -> Reverse -> Base32
         const s1 = atob(encryptedData);
         const s2 = s1.split("").reverse().join("");
         const s3 = b32d(s2);
         const finalHtml = decodeURIComponent(escape(s3));
 
-        // 3. Çözülen içeriği yazdır
         document.open();
         document.write(finalHtml);
         
-        // Modern Beyaz Rozet
+        // Rozet
         const b = document.createElement("div");
-        b.style = "position:fixed;bottom:12px;right:12px;background:rgba(255,255,255,0.08);color:#fff;padding:4px 10px;border:1px solid rgba(255,255,255,0.2);border-radius:50px;font-size:9px;z-index:999999;font-weight:500;letter-spacing:0.8px;backdrop-filter:blur(10px);pointer-events:none;font-family:sans-serif;box-shadow:0 4px 15px rgba(0,0,0,0.5);text-transform:uppercase;";
+        b.style = "position:fixed;bottom:12px;right:12px;background:rgba(255,255,255,0.1);color:#fff;padding:4px 10px;border:1px solid rgba(255,255,255,0.2);border-radius:50px;font-size:9px;z-index:999999;backdrop-filter:blur(10px);pointer-events:none;font-family:sans-serif;";
         b.innerHTML = "🛡️ OBFEX SECURE";
         document.body.appendChild(b);
         document.close();
+        
     } catch(e) {
-        document.body.innerHTML = "Veri dosyası (obfexfixingsearch.txt) okunamadı!";
+        console.error("HATA:", e);
+        document.body.innerHTML = "<b style='color:red'>Hata: " + e + "</b>";
     }
 })();
